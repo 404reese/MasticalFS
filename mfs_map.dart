@@ -1,4 +1,5 @@
 // Automatic FlutterFlow imports
+import 'dart:async';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/custom_code/widgets/index.dart'; // Imports other custom widgets
@@ -25,6 +26,12 @@ class MFSmap extends StatefulWidget {
   State<MFSmap> createState() => _MFSmapState();
 }
 
+
+
+class _MFSmapState extends State<MFSmap> {
+  late LatLng currentLocation;
+
+
 Future<bool> checkPermission() async {
   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
@@ -43,7 +50,22 @@ Future<bool> checkPermission() async {
   return true;
 }
 
-class _MFSmapState extends State<MFSmap> {
+void getCurrentLocation() async{
+  Geolocator.getPositionStream(
+    locationSettings: LocationSettings(
+      accuracy: LocationAccuracy.best,
+      distanceFilter: 3 // 3 meter user radius
+    ),
+  ).listen((Position position){
+    LatLng newPosition = LatLng(position.latitude, position.longitude);
+    if (mounted) {
+      setState(()=> currentLocation = newPosition);
+      if(FFAppState().activityStarted){
+        
+      } 
+    }
+  });
+}
   @override
   void initState() {
     //
@@ -61,4 +83,7 @@ class _MFSmapState extends State<MFSmap> {
   Widget build(BuildContext context) {
     return Container();
   }
+}
+
+checkPermissions() {
 }
