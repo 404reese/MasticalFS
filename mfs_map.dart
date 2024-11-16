@@ -28,9 +28,11 @@ class MFSmap extends StatefulWidget {
 }
 
 class _MFSmapState extends State<MFSmap> {
-  late LatLng currentLocation;
-  final List<LatLng> route = [];
+  LatLng? currentLocation;
+  final List<ll.LatLng> route = [];
   bool clearRoute = false;
+  final MapController mapController = MapController();
+  Timer? timer
 
   Future<bool> checkPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -57,11 +59,11 @@ class _MFSmapState extends State<MFSmap> {
           distanceFilter: 3 // 3 meter user radius
           ),
     ).listen((Position position) {
-      LatLng newPosition = LatLng(position.latitude, position.longitude);
+      ll.LatLng newPosition = ll.LatLng(position.latitude, position.longitude);
       if (mounted) {
         setState(() => currentLocation = newPosition);
         if (FFAppState().activityStarted) {
-          if(clearRoute){
+          if (clearRoute) {
             setState(() {
               route.clear();
               clearRoute = false;
@@ -70,14 +72,13 @@ class _MFSmapState extends State<MFSmap> {
           setState(() {
             route.add(newPosition);
           });
-        }
-        else{
-          if(!clearRoute){
+          _mapController.move(newPosition,13);
+        } else {
+          if (!clearRoute) {
             setState(() {
               clearRoute = true;
             });
           }
-          
         }
       }
     });
@@ -89,17 +90,53 @@ class _MFSmapState extends State<MFSmap> {
     super.initState();
     checkPermissions().then((permissionAccepted) {
       if (permissionAccepted) {
-        Timer timer = Timer.periodic(Duration(seconds: 2), (Timer t) {
-          // Get
+        timer = Timer.periodic(Duration(seconds: 2), (Timer t) {
+          // Get user position
+          getCurrentLocation();
         });
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
+@override
+void dispose(){
+  //
+  super.dispose();
+  timer?.cancel();
 }
 
-checkPermissions() {}
+
+
+  @override
+  Widget build(BuildContext context) {
+    return currentLocation == null ? Center(child: CircularProgressIndicator()): FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: currentLocation!,
+        initialZoom: 13,
+      )
+      children: [
+        TileLayer(
+          urlTemplate: 'https://{s}.titl.openstreetmap.org/{z}/{x}/{y}.png',
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              width: 80,
+              height: 80,
+              point: currentLocation!,
+              child: Icon(Icons.circle_rounded, size: 30, color: Colors.blue,),
+            )
+          ]
+        ),
+        PolylineLayer(
+          polylines: [
+            points: route,
+            storkeWidth:8,
+            color: Colors.red,
+          ],
+        )
+      ]
+    );
+  }
+}
